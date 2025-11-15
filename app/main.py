@@ -10,10 +10,14 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Fun Fair Order Management Server")
 
+origins = [
+    "http://localhost:8100",
+    "http://127.0.0.1:8100",
+]
 # CORS (adjust origins as needed)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

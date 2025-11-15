@@ -72,7 +72,7 @@ async def list_orders(
     status_filter: Optional[OrderStatus] = Query(None, alias="status"),
     db: Session = Depends(get_db),
 ):
-    query = db.query(Order).order_by(Order.created_at.desc())
+    query = db.query(Order).order_by(Order.created_at.asc())
     if status_filter is not None:
         query = query.filter(Order.status == status_filter.value)
 
@@ -96,6 +96,21 @@ async def cancel_order(order_id: int, db: Session = Depends(get_db)):
 
     return serialize_order(order)
 
+@router.post("/orders/{order_id}/await", response_model=OrderOut)
+async def await_order(order_id: int, db: Session = Depends(get_db)):
+    order: Optional[Order] = db.query(Order).filter(Order.id == order_id).first()
+    if order is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
+
+    if order.status != OrderStatus.NEW.value:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Only NEW orders can be awaiting")
+
+    order.status = OrderStatus.AWAITING.value
+    db.add(order)
+    db.commit()
+    db.refresh(order)
+
+    return serialize_order(order)
 
 @router.post("/orders/{order_id}/complete", response_model=OrderOut)
 async def complete_order(order_id: int, db: Session = Depends(get_db)):
@@ -103,8 +118,8 @@ async def complete_order(order_id: int, db: Session = Depends(get_db)):
     if order is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
 
-    if order.status != OrderStatus.NEW.value:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Only NEW orders can be completed")
+    if order.status != OrderStatus.AWAITING.value:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Only AWAITING orders can be completed")
 
     order.status = OrderStatus.COMPLETED.value
     db.add(order)

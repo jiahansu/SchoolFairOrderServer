@@ -1,7 +1,7 @@
 from decimal import Decimal
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status, Request
 from sqlalchemy.orm import Session
 
 from ..database import get_db
@@ -54,7 +54,8 @@ async def create_menu_item(
 
 @router.get("/menu", response_model=List[MenuItemOut])
 async def list_menu_items(
-    active: bool = True,
+    request: Request,
+    active: Optional[bool] = None,
     db: Session = Depends(get_db),
 ):
     """List menu items, optionally filtering by active flag (default: only active)."""
@@ -64,13 +65,16 @@ async def list_menu_items(
         query = query.filter(MenuItem.is_active == active)
     items = query.order_by(MenuItem.name).all()
 
+    base_url = str(request.base_url).rstrip("/")
+    media_prefix = MEDIA_URL_PREFIX.strip("/")
+
     return [
         MenuItemOut(
             id=item.id,
             name=item.name,
             unit_price=item.unit_price,
             is_active=item.is_active,
-            photo_url=build_photo_url(item.photo_path),
+            photo_url=f"{base_url}/{media_prefix}/{item.photo_path}" if item.photo_path else None,
             created_at=item.created_at,
             updated_at=item.updated_at,
         )
@@ -125,17 +129,14 @@ async def delete_menu_item(
     menu_id: int,
     db: Session = Depends(get_db),
 ):
-    """Soft-delete a menu item by setting is_active to False."""
+    """hard-delete a menu item and its photo."""
 
     item: Optional[MenuItem] = db.query(MenuItem).filter(MenuItem.id == menu_id).first()
     if item is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Menu item not found")
 
-    if not item.is_active:
-        return Message(message="Menu item already inactive")
-
-    item.is_active = False
-    db.add(item)
+    delete_file_if_exists(item.photo_path, media_root=MEDIA_ROOT)
+    db.delete(item)
     db.commit()
 
-    return Message(message="Menu item deactivated")
+    return Message(message="Menu item deleted")

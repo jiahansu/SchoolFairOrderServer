@@ -17,6 +17,7 @@ from .database import Base
 
 class OrderStatus(str, Enum):
     NEW = "NEW"
+    AWAITING = "AWAITING"
     COMPLETED = "COMPLETED"
     CANCELED = "CANCELED"
 
@@ -42,7 +43,7 @@ class Order(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     order_code = Column(String(50), unique=True, index=True, nullable=True)
-    customer_name = Column(String(255), nullable=False)
+    customer_name = Column(String(255), nullable=True)
     status = Column(String(20), default=OrderStatus.NEW.value, index=True)
     total_price = Column(Numeric(10, 2), nullable=False, default=0)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
