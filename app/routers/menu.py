@@ -74,7 +74,7 @@ async def list_menu_items(
             name=item.name,
             unit_price=item.unit_price,
             is_active=item.is_active,
-            photo_url=f"{base_url}/{media_prefix}/{item.photo_path}" if item.photo_path else None,
+            photo_url=build_photo_url(item.photo_path),
             created_at=item.created_at,
             updated_at=item.updated_at,
         )

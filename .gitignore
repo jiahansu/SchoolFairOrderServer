@@ -3,3 +3,4 @@ __pycache__/
 media
 .vscode/
 .DS_Store
+log.txt

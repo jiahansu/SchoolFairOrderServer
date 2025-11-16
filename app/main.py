@@ -13,6 +13,7 @@ app = FastAPI(title="Fun Fair Order Management Server")
 origins = [
     "http://localhost:8100",
     "http://127.0.0.1:8100",
+    "https://4xrop09rx746lp-8100.proxy.runpod.net"
 ]
 # CORS (adjust origins as needed)
 app.add_middleware(

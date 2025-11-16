@@ -96,6 +96,7 @@ async def cancel_order(order_id: int, db: Session = Depends(get_db)):
 
     return serialize_order(order)
 
+
 @router.post("/orders/{order_id}/await", response_model=OrderOut)
 async def await_order(order_id: int, db: Session = Depends(get_db)):
     order: Optional[Order] = db.query(Order).filter(Order.id == order_id).first()
@@ -111,6 +112,7 @@ async def await_order(order_id: int, db: Session = Depends(get_db)):
     db.refresh(order)
 
     return serialize_order(order)
+
 
 @router.post("/orders/{order_id}/complete", response_model=OrderOut)
 async def complete_order(order_id: int, db: Session = Depends(get_db)):
@@ -165,3 +167,17 @@ async def get_order_stats(
     ]
 
     return OrderStats(total_orders=total_orders, total_amount=total_amount, items=items_stats)
+
+
+@router.delete("/orders", response_model=Message)
+async def delete_all_orders(db: Session = Depends(get_db)):
+    """Delete all orders and their associated order items."""
+    orders: List[Order] = db.query(Order).all()
+    deleted_count = len(orders)
+
+    for order in orders:
+        db.delete(order)
+
+    db.commit()
+
+    return Message(message=f"Deleted {deleted_count} orders")
