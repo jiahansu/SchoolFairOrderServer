@@ -2,3 +2,4 @@ database.db
 __pycache__/
 media
 .vscode/
+.DS_Store
