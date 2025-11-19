@@ -48,6 +48,7 @@ class OrderItemCreate(BaseModel):
 
 class OrderCreate(BaseModel):
     customer_name: str
+    preorder: bool = False
     items: List[OrderItemCreate]
 
 
@@ -68,6 +69,7 @@ class OrderOut(BaseModel):
     order_code: str
     customer_name: str
     status: OrderStatus
+    preorder: bool
     total_price: Decimal
     created_at: datetime
     updated_at: datetime

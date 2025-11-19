@@ -35,7 +35,7 @@ async def create_order(payload: OrderCreate, db: Session = Depends(get_db)):
     if len(menu_map) != len(menu_ids):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Some menu items are invalid or inactive")
 
-    order = Order(customer_name=payload.customer_name, status=OrderStatus.NEW.value, total_price=Decimal("0.00"))
+    order = Order(customer_name=payload.customer_name, status=OrderStatus.NEW.value, total_price=Decimal("0.00"), preorder=payload.preorder)
     db.add(order)
     db.flush()  # get order.id
 
@@ -70,11 +70,15 @@ async def create_order(payload: OrderCreate, db: Session = Depends(get_db)):
 @router.get("/orders", response_model=List[OrderOut])
 async def list_orders(
     status_filter: Optional[OrderStatus] = Query(None, alias="status"),
+    preorder_filter: Optional[bool] = Query(None, alias="preorder"),
     db: Session = Depends(get_db),
 ):
     query = db.query(Order).order_by(Order.created_at.asc())
+    if preorder_filter is not None:
+        query = query.filter(Order.preorder == preorder_filter)
     if status_filter is not None:
         query = query.filter(Order.status == status_filter.value)
+    
 
     orders = query.all()
     return [serialize_order(o) for o in orders]
@@ -139,11 +143,14 @@ async def list_order_statuses():
 @router.get("/orders/stats", response_model=OrderStats)
 async def get_order_stats(
     status_filter: Optional[OrderStatus] = Query(None, alias="status"),
+    preorder_filter: Optional[bool] = Query(None, alias="preorder"),
     db: Session = Depends(get_db),
 ):
     query = db.query(Order)
     if status_filter is not None:
         query = query.filter(Order.status == status_filter.value)
+    if preorder_filter is not None:
+        query = query.filter(Order.preorder == preorder_filter)
 
     orders: List[Order] = query.all()
 

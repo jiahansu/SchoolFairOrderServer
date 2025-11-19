@@ -2,10 +2,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from .database import Base, engine
+from .database import Base, engine, ensure_preorder_column
 from .routers import menu, orders, reports
 
-# Create all tables on startup (simple approach for this small app)
+# Lightweight migration then create tables on startup
+ensure_preorder_column()
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Fun Fair Order Management Server")

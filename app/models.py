@@ -45,6 +45,7 @@ class Order(Base):
     order_code = Column(String(50), unique=True, index=True, nullable=True)
     customer_name = Column(String(255), nullable=True)
     status = Column(String(20), default=OrderStatus.NEW.value, index=True)
+    preorder = Column(Boolean, default=False, nullable=False, index=True)
     total_price = Column(Numeric(10, 2), nullable=False, default=0)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(
