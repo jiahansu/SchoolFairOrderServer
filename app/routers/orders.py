@@ -135,6 +135,30 @@ async def complete_order(order_id: int, db: Session = Depends(get_db)):
     return serialize_order(order)
 
 
+@router.post("/orders/{order_id}/reset", response_model=OrderOut)
+async def reset_order_to_new(order_id: int, db: Session = Depends(get_db)):
+    """
+    Reset an order back to NEW status.
+    Only orders currently in AWAITING status can be reset.
+    """
+    order: Optional[Order] = db.query(Order).filter(Order.id == order_id).first()
+    if order is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
+
+    if order.status != OrderStatus.AWAITING.value:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only AWAITING orders can be reset to NEW",
+        )
+
+    order.status = OrderStatus.NEW.value
+    db.add(order)
+    db.commit()
+    db.refresh(order)
+
+    return serialize_order(order)
+
+
 @router.get("/orders/statuses", response_model=List[str])
 async def list_order_statuses():
     return [status.value for status in OrderStatus]
@@ -174,6 +198,19 @@ async def get_order_stats(
     ]
 
     return OrderStats(total_orders=total_orders, total_amount=total_amount, items=items_stats)
+
+
+@router.delete("/orders/{order_id}", response_model=Message)
+async def delete_order(order_id: int, db: Session = Depends(get_db)):
+    """Delete a single order and its associated order items."""
+    order: Optional[Order] = db.query(Order).filter(Order.id == order_id).first()
+    if order is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
+
+    db.delete(order)
+    db.commit()
+
+    return Message(message=f"Deleted order {order_id}")
 
 
 @router.delete("/orders", response_model=Message)
